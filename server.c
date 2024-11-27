@@ -12,6 +12,8 @@
 
 // * file reading is thread safe
 
+static int t_count = 0;
+
 struct chunk_data
 {
     int client_socket; // needed for TCP connection
@@ -40,7 +42,7 @@ void* send_chunk(void *args)
     fseek(file, start, SEEK_SET);
 
     // read chunk
-    char buffer[size]; // ? might need to change based on whether file is image or text
+    unsigned char buffer[size]; // ? might need to change based on whether file is image or text
     int read_bytes = fread(buffer, 1, size, file);
     if (read_bytes < 0)
     {
@@ -48,8 +50,14 @@ void* send_chunk(void *args)
         return NULL;
     }
 
+    // printf("Sending chunk of size %d\n", read_bytes);
+    // printf("Sending chunk of size %d\n", size);
+    // fflush(stdout);
+
     // send chunk
     send(client_fd, buffer, read_bytes, 0);
+    printf("Server: Thread %d {\n%s\n}, position %d\n", ++t_count, buffer, start);
+    fflush(stdout); // Ensure immediate printing
 
     // close file
     fclose(file);
@@ -92,7 +100,7 @@ void *handle_client(void *socket_ptr)
     // printf("Opening file %s\n", f_name);
     if (file == NULL)
     {
-        perror("Server: Server: Error opening file");
+        perror("Server: Error opening file");
         close(client_socket);
         return NULL;
     }

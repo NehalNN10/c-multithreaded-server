@@ -1,0 +1,35 @@
+Server is running and waiting for connections...
+Server: Thread 139920063829696 {
+r6_%M2P1wX5p7!^E+Fu)@QIbE@4jO]@7vusOxhU)AHwV\DTNP\o>/,QS/b_|x}kG<&E_~4As>qn9/m%9Xe\rR33a(lt.5#(VYm`8v%<LemR1@a[4B7/d![*3?(o!vx%x<)-Rx4T@jl0[rI:<[<aUpu{db{I`.d!r/N1?{v1M0lm}tst1>1i%Pfrch%J1N4Gx:Yyc+$#oWk6fDV
+}, position 0
+Server: Thread 139920055436992 {
+/Eq+4InkeVVA#{i{bVDHkio\#*@3RfGU~{&+^,KT2cHifymS1G->)]?TWE{K>[{$k/t`eY1KcH\5,M[Q~XR,kezhT@5c\dnMJ.17]Y;94}Dt?;f2UYa@4o0dlRF`q0}$C*ftF%39$,HQ?ZaQ05:#q$:e!g<uRq-4j1X-%]WJ:8{p<Nb@xki$Ogm4wk<@y-+][A6V0k%ul0AYDV
+}, position 204
+File transfer request sent!
+Size of file: 1024
+File created successfully
+Client: Thread 140372993287872 {
+r6_%M2P1wX5p7!^E+Fu)@QIbE@4jO]@7vusOxhU)AHwV\DTNP\o>/,QS/b_|x}kG<&E_~4As>qn9/m%9Xe\rR33a(lt.5#(VYm`8v%<LemR1@a[4B7/d![*3?(o!vx%x<)-Rx4T@jl0[rI:<[<aUpu{db{I`.d!r/N1?{v1M0lm}tst1>1i%Pfrch%J1N4Gx:Yyc+$#oWk6f/
+}, position 0
+Client: Thread 140372984895168 {
+Eq+4InkeVVA#{i{bVDHkio\#*@3RfGU~{&+^,KT2cHifymS1G->)]?TWE{K>[{$k/t`eY1KcH\5,M[Q~XR,kezhT@5c\dnMJ.17]Y;94}Dt?;f2UYa@4o0dlRF`q0}$C*ftF%39$,HQ?ZaQ05:#q$:e!gServer: Thread 139920047044288 {
+F}7]j1%eu*!^Pvehnaf/P;rRzg9prGuDqP_`kr6ets^b|dqC$s`ino-vo1g&$3||s3LdL&^#Se]s]0@Kn&YO5:9#+NtN1gtEM4vQ?6jYMg6TO4/tPoAjZD>KefS~_CF%|TqA(#Bm$2MSRSS7-NP+m,EjD[L%JMDB+GWbr@X=Ts$dI<O@eT9z]W($WJqrR$a>R+}PS9wjV)<,DV
+}, position 408
+<uRq-4j1X-%]WJ:8{p<Nb@xki$Ogm4wk<@y-+][A6V0k%ul0AY
+}, position 205
+Client: Thread 140372968109760 {
+F}7]j1%eu*!^Pvehnaf/P;rRzg9prGuDqP_`kr6ets^b|dqC$s`ino-vo1g&$3||s3LdL&^#Se]s]0@Kn&YO5:9#+NtN1gtEM4vQ?6jYMg6TO4/tPoAjZD>KefS~_CF%|TqA(#Bm$2MSRSS7-NP+m,EjD[L%JMDB+GWbr@X=Ts$dI<O@eT9z]W($WJqrR$a>R+}PS9wjV)<,
+}, position 615
+Client: Thread 140372751677120 {
+ZJrQ+;)Hm/bBMvQ&k7sr<R@%6$8DFiT0n`W&5S2\~{IoXT3*SoZYJV!4-FcnS^[&#u^L8wk#s;%hXGsElGp|fLy1>/vqZdSmr}HBX&cs!hSep7+z#8e.HRgN#G*DKI]@|=@s2N(QaJ/z`~c(en(.PHX+^[0Wy$Server: Thread 139919968171712 {
+ZJrQ+;)Hm/bBMvQ&k7sr<R@%6$8DFiT0n`W&5S2\~{IoXT3*SoZYJV!4-FcnS^[&#u^L8wk#s;%hXGsElGp|fLy1>/vqZdSmr}HBX&cs!hSep7+z#8e.HRgN#G*DKI]@|=@s2N(QaJ/z`~c(en(.PHX+^[0Wy$SY3k[`k*P6>$2\wq0{E!j!l,D]{uf)QZ2FdP7=+,JCe1@:DV
+}, position 612
+Server: Thread 139919959779008 {
+Lr&ix&CeJvn~MH6:l|OSN>,e[kQkm]>Z\zt_<?C8l#ic0=c59HHcNk]7,^Mcpy<.._B#zU^z`ad|h&{oZ6rimZTQ/ncr%f<f28h)_.k0@~(Q!,44pN94`&ygOb~KY--0O<J446qmHB^El9S\w{;5]1nFHoK&aO6qr,{?7raz{zjjavo%f{[WX_{,zt+r_fUGg!:&6PxI@ocf;-wQÀÞ§A
+}, position 816
+SY3k[`k*P6>$2\wq0{E!j!l,D]{uf)QZ2FdP7=+,JCe1@:
+}, position 820
+Client: Thread 140372976502464 {
+Lr&ix&CeJvn~MH6:l|OSN>,e[kQkm]>Z\zt_<?C8l#ic0=c59HHcNk]7,^Mcpy<.._B#zU^z`ad|h&{oZ6rimZTQ/ncr%f<f28h)_.k0@~(Q!,44pN94`&ygOb~KY--0O<J446qmHB^El9S\w{;5]1nFHoK&aO6qr,{?7raz{zjjavo%f{[WX_{,zt+r_fUGg!:&6PxI@ocf;
+}, position 410
+Binary files test_files/testfile.txt and received_files/testfile.txt differ

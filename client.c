@@ -16,15 +16,26 @@ int round_up_division(int a, int b)
     return (a + b - 1) / b;
 }
 
+unsigned char checksum(unsigned char *ptr, size_t sz)
+{
+    unsigned char chk = 0;
+    while (sz-- != 0)
+        chk -= *ptr++;
+    return chk;
+}
+// simple checksum function borrowed from StackOverflow
+// https://stackoverflow.com/a/3464036
+
 int create_file_with_size(const char *filename, int file_size)
 {
-    FILE *file = fopen(filename, "wb"); // used for writing in binary files too
-    if (file == NULL)
+    FILE *rec_file = fopen(filename, "wb"); // used for writing in binary files too
+    printf("Creating file to receive data rn...\n");
+    if (rec_file == NULL)
     {
         perror("Client: Error creating file");
         return -1;
     }
-    fclose(file);
+    fclose(rec_file);
 
     // Preallocate file size
     if (truncate(filename, file_size) != 0)
@@ -52,13 +63,20 @@ void* receive_chunks(void* args)
     struct chunk_data* data = (struct chunk_data*)args;
     int client_fd = data->client_socket;
     int size = data->size;
-    char* buffer = (char*)(malloc(size));
+    unsigned char* buffer = (unsigned char*)(malloc(size));
     int valread = read(client_fd, buffer, size);
+    printf("Receiving chunk of size %d\n", size);
     if (valread < 0)
     {
         printf("Client: Error reading chunk from server\n");
         return NULL;
     }
+    if (valread != size)
+    {
+        printf("Warning: Read mismatched chunk size: %d\n", valread);
+        fflush(stdout);
+    }
+    printf("Client: Thread %d {\n%s\n}, position %d\n", ++t_count, buffer, data->start);
 
     // appending chunk to file
     // using some random file for now
@@ -68,7 +86,9 @@ void* receive_chunks(void* args)
 
     pthread_mutex_lock(&file_mutex);
     // printf("File path: %s\n", file_name);
-    FILE* file = fopen(file_name, "r+");
+    FILE* file = fopen(file_name, "rb+");
+
+    printf("Writing from position %d\n", data->start);
 
     if (file == NULL)
     {
@@ -76,10 +96,10 @@ void* receive_chunks(void* args)
         return NULL;
     }
     fseek(file, data->start, SEEK_SET);
-    fwrite(buffer, 1, size, file);
+    fwrite(buffer, 1, valread, file);
     // rewind(file);
 
-    t_count += 1;
+    // t_count += 1;
 
     // TODO: check checksum here
 
@@ -90,7 +110,7 @@ void* receive_chunks(void* args)
     // free buffer
     free(buffer);
     // free(file_name);
-    printf("Chunk received and written to file from thread %ld\n", pthread_self());
+    // printf("Chunk received and written to file from thread %ld\n", pthread_self());
     return NULL;
 }
 
@@ -163,6 +183,7 @@ int main(int argc, char const *argv[])
     // receiving response from server
     int file_size;
     valread = read(client_fd, &file_size, sizeof(int));
+    printf("Size of file: %d\n", file_size);
     valread += 0; // to avoid unused variable warning
     // printf("The size of the file is %d\n", file_size);
     // printf("Trying to clear %s\n", rec_file_name);
@@ -176,20 +197,10 @@ int main(int argc, char const *argv[])
         return -1;
     }
     fclose(temp);
-    
-    // fclose(fopen(rec_file_name, "wb+")); // empty the file if it has anything in it
-
-    // write garbage values to file
-    // FILE* file = fopen(rec_file_name, "w");
-    // if (file == NULL)
-    // {
-    //     printf("Error opening file %s\n", rec_file_name);
-    //     return -1;
-    // }
 
     if (create_file_with_size(rec_file_name, file_size) == 0)
     {
-        printf("File created successfully\n");
+        printf("File created successfully: %s\n", rec_file_name);
     }
     else
     {
@@ -222,6 +233,9 @@ int main(int argc, char const *argv[])
     {
         pthread_join(threads[i], NULL);
     }
+
+    // receiving checksum
+    // calculating checksum
 
     // closing the connected socket
     close(client_fd);
