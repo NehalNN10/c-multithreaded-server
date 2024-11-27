@@ -60,12 +60,15 @@ static int t_count = 0;
 // function which receives chunks from server
 void* receive_chunks(void* args)
 {
+    // pthread_mutex_lock(&file_mutex);
     struct chunk_data* data = (struct chunk_data*)args;
     int client_fd = data->client_socket;
     int size = data->size;
     unsigned char* buffer = (unsigned char*)(malloc(size));
-    int valread = read(client_fd, buffer, size);
-    printf("Receiving chunk of size %d\n", size);
+    int start = 0;
+    int valread = read(client_fd, &start, sizeof(int));
+    valread = read(client_fd, buffer, size);
+    printf("Receiving chunk of size %d from position %d\n", size, start);
     if (valread < 0)
     {
         printf("Client: Error reading chunk from server\n");
@@ -84,18 +87,17 @@ void* receive_chunks(void* args)
     char file_name[256];
     snprintf(file_name, 256, "received_files/%s", data->file_name); // Construct the file path
 
-    pthread_mutex_lock(&file_mutex);
-    // printf("File path: %s\n", file_name);
+    printf("File path: %s\n", file_name);
     FILE* file = fopen(file_name, "rb+");
 
-    printf("Writing from position %d\n", data->start);
+    printf("Writing from position %d\n", start);
 
     if (file == NULL)
     {
         printf("Client: Error opening file %s\n", file_name);
         return NULL;
     }
-    fseek(file, data->start, SEEK_SET);
+    fseek(file, start, SEEK_SET);
     fwrite(buffer, 1, valread, file);
     // rewind(file);
 
@@ -178,7 +180,6 @@ int main(int argc, char const *argv[])
     char *rec_file_name = (char *)(malloc(256));
     int _ = snprintf(rec_file_name, 256, "received_files/%s", file_name); // Construct the file path
     _ += 0;
-
 
     // receiving response from server
     int file_size;

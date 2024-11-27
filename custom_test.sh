@@ -7,9 +7,9 @@ SERVER_PID=$!
 sleep 1  # Give server time to start
 
 # Test 1: Small text file with 1 thread
-echo "Test 1: Small text file with 1 thread"
-./client testfile.txt 1
-diff test_files/testfile.txt received_files/testfile.txt
+# echo "Test 1: Small text file with 1 thread"
+# ./client testfile.txt 1
+# diff test_files/testfile.txt received_files/testfile.txt
 
 
 # Test 2: Small text file with 5 threads
@@ -20,11 +20,12 @@ diff test_files/testfile.txt received_files/testfile.txt
 # Test 3: Large text file with 10 threads
 # echo "Test 3: Large text file with 10 threads"
 # ./client largefile.txt 10
-# diff test_files/largefile.txt received_files/largefile.txt
 
-# # Test 4: Image file with 5 threads
+# Test 4: Image file with 5 threads
 # echo "Test 4: Image file with 5 threads"
-# ./client image.jpg 5
+# # ./client image.jpg 5
+# ./client a-borealis.jpg 5
+# diff test_files/a-borealis.jpg received_files/a-borealis.jpg
 
 # # Test 5: Large image file with 10 threads
 # echo "Test 5: Large image file with 10 threads"

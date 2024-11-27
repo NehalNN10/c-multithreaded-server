@@ -12,7 +12,7 @@
 
 // * file reading is thread safe
 
-static int t_count = 0;
+// static int t_count = 0;
 
 struct chunk_data
 {
@@ -21,6 +21,11 @@ struct chunk_data
     int size;
     char *file_name;
 };
+
+int round_up_division(int a, int b)
+{
+    return (a + b - 1) / b;
+}
 
 void* send_chunk(void *args)
 {
@@ -44,20 +49,36 @@ void* send_chunk(void *args)
     // read chunk
     unsigned char buffer[size]; // ? might need to change based on whether file is image or text
     int read_bytes = fread(buffer, 1, size, file);
+    // printf("Bytes read: %d\n", read_bytes);
+    // fflush(stdout);
+    // printf("Size: %d\n", size);
+    // fflush(stdout);
     if (read_bytes < 0)
     {
         printf("Server: Error reading file %s\n", file_name);
+        fflush(stdout);
         return NULL;
     }
 
-    // printf("Sending chunk of size %d\n", read_bytes);
-    // printf("Sending chunk of size %d\n", size);
+    if (read_bytes != size)
+    {
+        printf("Warning: Read mismatched chunk size: %d\n", read_bytes);
+        // fflush(stdout);
+    }
+
     // fflush(stdout);
+    // printf("Server: Sending chunk of size %d from position %d\n", read_bytes, start);
+    // fflush(stdout);
+    // printf("Sending chunk of size %d\n", size);
 
     // send chunk
+    // printf("Server: Thread %d {\n%s\n}, position %d\n", ++t_count, buffer, start);
+    // fflush(stdout); // Ensure immediate printing
+    printf("Server: sending chunk start position %d\n", start);
+    fflush(stdout);
+
+    send(client_fd, &start, sizeof(int), 0);
     send(client_fd, buffer, read_bytes, 0);
-    printf("Server: Thread %d {\n%s\n}, position %d\n", ++t_count, buffer, start);
-    fflush(stdout); // Ensure immediate printing
 
     // close file
     fclose(file);
@@ -116,8 +137,8 @@ void *handle_client(void *socket_ptr)
         struct chunk_data *data = malloc(sizeof(struct chunk_data));
         data->client_socket = client_socket;
         data->file_name = f_name;
-        data->start = i * (file_size / no_of_threads);
-        data->size = (i == no_of_threads - 1) ? (file_size - data->start) : (file_size / no_of_threads);
+        data->start = i * round_up_division(file_size, no_of_threads);
+        data->size = (i == no_of_threads - 1) ? (file_size - data->start) : round_up_division(file_size, no_of_threads);
 
         pthread_create(&threads[i], NULL, send_chunk, data);
     }
