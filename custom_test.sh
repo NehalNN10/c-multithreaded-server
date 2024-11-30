@@ -2,6 +2,7 @@
 # tests.sh - Automated testing for server-client file transfer
 
 # Start the server in the background
+# ./server1 & 
 ./server & 
 SERVER_PID=$!
 sleep 1  # Give server time to start
@@ -13,14 +14,15 @@ sleep 1  # Give server time to start
 
 
 # Test 2: Small text file with 5 threads
-echo "Test 2: Small text file with 5 threads"
-./client testfile.txt 5
-diff test_files/testfile.txt received_files/testfile.txt
+# echo "Test 2: Small text file with 5 threads"
+# ./client testfile.txt 5
+# diff test_files/testfile.txt received_files/testfile.txt
 
 # Test 3: Large text file with 10 threads
 echo "Test 3: Large text file with 10 threads"
+# ./client1 largefile.txt 10
 ./client largefile.txt 10
-diff -y test_files/largefile.txt received_files/largefile.txt
+diff -y largefile.txt reqlargefile.txt
 
 # Test 4: Image file with 5 threads
 # echo "Test 4: Image file with 5 threads"

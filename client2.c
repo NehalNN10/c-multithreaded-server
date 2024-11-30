@@ -9,7 +9,7 @@
 #include <stdlib.h>
 #define PORT 8080
 
-static pthread_mutex_t file_mutex = PTHREAD_MUTEX_INITIALIZER;
+// static pthread_mutex_t file_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 int round_up_division(int a, int b)
 {
@@ -55,7 +55,7 @@ struct chunk_data
     char *file_name;
 };
 
-static int t_count = 0;
+// static int t_count = 0;
 
 // function which receives chunks from server
 void *receive_chunks(void *args)
@@ -291,6 +291,7 @@ int main(int argc, char const *argv[])
 
         fseek(temp_file, 0, SEEK_END);
         long temp_file_size = ftell(temp_file);
+        printf("[CLIENT] Temp file %s size: %ld\n", temp_filename, temp_file_size);
         rewind(temp_file);
 
         unsigned char *buffer = (unsigned char *)malloc(temp_file_size);
@@ -322,7 +323,7 @@ int main(int argc, char const *argv[])
 
     // closing the connected socket
     close(client_fd);
-    printf("[CLIENT] Connection closed\n");
+    printf("[CLIENT] Connection closed\n\n\n");
 
     // // free data here
     // free(threads);

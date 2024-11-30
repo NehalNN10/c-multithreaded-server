@@ -13,11 +13,7 @@
 
 // * file reading is thread safe
 
-// static int t_count = 0;
-
 static int server_fd = 0;
-
-static pthread_mutex_t file_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 struct chunk_data
 {
@@ -36,7 +32,7 @@ int round_up_division(int a, int b)
 void *send_chunk(void *args)
 {
     struct chunk_data *data = (struct chunk_data *)args;
-    int client_fd = data->client_socket;
+    // int client_fd = data->client_socket;
     printf("[SERVER] Thread %d: Sending chunk of size %d from position %d\n", data->thread_id, data->size, data->start);
     // int start = data->start;
     // int size = data->size;

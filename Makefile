@@ -8,3 +8,9 @@ clean:
 	rm -f client server *.o
 
 retry: clean client2 server2
+
+client1:
+	gcc client1.c -o client1 -Wall
+
+server1:
+	gcc server1.c -o server1 -Wall
