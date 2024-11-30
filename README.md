@@ -44,6 +44,10 @@ Simply type `make client` to compile the client, and `make server` to compile th
 
 To run all test cases, type `./tests.sh` into the terminal. Note, you must give the script permission to execute by typing `chmod +x tests.sh` into the terminal.
 
+## Assumptions
+
+The program assumes the files to be tested are already in the folder named `test_files`. If not, place them there before running the test script.
+
 ## Limitations
 
 - The server can only handle one client at a time.

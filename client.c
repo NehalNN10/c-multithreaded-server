@@ -53,10 +53,12 @@ struct chunk_data
     char *file_name;
 };
 
-char* sha_256_checksum(char* file_name)
+char *sha_256_checksum(char *file_name)
 {
-    FILE* file = popen("sha256sum file_name", "r");
-    char buffer[64];
+    char command[256];
+    snprintf(command, sizeof(command), "sha256sum %s", file_name);
+    FILE *file = popen(command, "r");
+    char *buffer = (char *)(malloc(65));
     if (file == NULL)
     {
         perror("Error opening file");
@@ -388,26 +390,44 @@ int main(int argc, char const *argv[])
 
     fclose(rec_file);
     printf("[CLIENT] Final output file created: %s\n", rec_file_name);
-    free(rec_file_name);
+    // free(rec_file_name);
 
     // cleanup
     system("rm received_files/temp*.txt");
 
-    // // receiving checksum
-    // // calculating checksum
+    // receiving checksum
+    char* rec_checksum = (char*)(malloc(64));
+    valread = read(client_fd, rec_checksum, 64);
+    if (valread < 0)
+    {
+        printf("[CLIENT] Error receiving checksum\n");
+        close(client_fd);
+        return -1;
+    }
+    printf("[CLIENT] Checksum received: %s\n", rec_checksum);
+    
+    // calculating checksum
+    char *checksum = sha_256_checksum(rec_file_name);
 
     // closing the connected socket
     close(client_fd);
     printf("[CLIENT] Connection closed\n\n\n");
 
-    // // free data here
-    // free(threads);
-    // free(rec_file_name);
+    if (strcmp(checksum, rec_checksum) == 0)
+    {
+        printf("[CLIENT] Checksums match\n");
+    }
+    else
+    {
+        printf("[CLIENT] Checksums do not match\n");
+    }
+
+    // free data here
+    free(threads);
+    free(rec_file_name);
 
     return 0;
 }
-
-// TODO: perform comparison to check if file is received correctly
 
 // Borrowed from Geeksforgeeks
 // https://www.geeksforgeeks.org/socket-programming-cc/

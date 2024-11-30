@@ -31,32 +31,29 @@ int round_up_division(int a, int b)
 
 char *sha_256_checksum(char *file_name)
 {
-    FILE *file = popen("sha256sum file_name", "r");
-    char buffer[64];
+    char command[256];
+    snprintf(command, sizeof(command), "sha256sum %s", file_name);
+    FILE *file = popen(command, "r");
+    char* buffer = (char*)(malloc(65));
     if (file == NULL)
     {
-        perror("Error opening file");
+        perror("[SERVER] Error opening file");
         return NULL;
     }
     if (fscanf(file, "%64s", buffer) == 1)
     {
-        printf("Checksum: %s\n", buffer);
+        printf("[SERVER] Checksum: %s\n", buffer);
     }
     pclose(file);
     return buffer;
 }
+// Inspired by https://medium.com/@sandipbhuyan/how-to-calculate-sha256-in-c-using-system-call-and-pipeline-4fd7e0064c22
 
 // function to send chunks
 void *send_chunk(void *args)
 {
     struct chunk_data *data = (struct chunk_data *)args;
-    // int client_fd = data->client_socket;
     printf("[SERVER] Thread %d: Sending chunk of size %d from position %d\n", data->thread_id, data->size, data->start);
-    // int start = data->start;
-    // int size = data->size;
-    // char *file_name = data->file_name;
-
-    // pthread_mutex_lock(&file_mutex);
 
     // open file
     printf("[SERVER] Opening file %s\n", data->file_name);
@@ -75,10 +72,6 @@ void *send_chunk(void *args)
     unsigned char buffer[data->size]; // ? might need to change based on whether file is image or text
     int read_bytes = fread(buffer, 1, data->size, file);
     printf("[SERVER] Read %d bytes from file %s\n", read_bytes, data->file_name);
-    // printf("Bytes read: %d\n", read_bytes);
-    // fflush(stdout);
-    // printf("Size: %d\n", size);
-    // fflush(stdout);
     if (read_bytes < 0)
     {
         printf("[SERVER] Error reading file %s\n", data->file_name);
@@ -188,7 +181,6 @@ void *handle_client(void *socket_ptr)
         close(client_socket);
         return NULL;
     }
-    // printf("Number of threads received: %d\n", no_of_threads);
 
     printf("[SERVER] Received request for file %s with %d threads\n", file_name, no_of_threads);
     fflush(stdout);
@@ -244,7 +236,16 @@ void *handle_client(void *socket_ptr)
         pthread_join(threads[i], NULL);
     }
 
-    // free(threads);
+    // send file checksum
+    char *checksum = sha_256_checksum(f_name);
+    if (checksum == NULL)
+    {
+        printf("[SERVER] Error calculating checksum\n");
+        close(client_socket);
+        return NULL;
+    }
+    send(client_socket, checksum, strlen(checksum), 0);
+
     close(client_socket);
     printf("[SERVER] Client handled and socket closed\n");
     return NULL;
@@ -252,7 +253,6 @@ void *handle_client(void *socket_ptr)
 
 int main()
 {
-    // int server_fd;
     struct sockaddr_in address;
     int opt = 1;
     socklen_t addrlen = sizeof(address);
@@ -302,14 +302,11 @@ int main()
         printf("[SERVER] Connection accepted\n");
 
         pthread_t client_thread;
-        // pthread_create(&client_thread, NULL, handle_client, socket_ptr);
         pthread_create(&client_thread, NULL, handle_client, socket_ptr);
-        // pthread_detach(client_thread); // no need to join threads after this point
         printf("[SERVER] Client thread created\n");
         pthread_join(client_thread, NULL);
     }
 
-    // TODO: send file checksum before closing socket
     close(server_fd);
     printf("**************************[SERVER] Server closed**************************\n");
     return 0;
