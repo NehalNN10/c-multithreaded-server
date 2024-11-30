@@ -18,8 +18,9 @@ echo "Test 2: Small text file with 5 threads"
 diff test_files/testfile.txt received_files/testfile.txt
 
 # Test 3: Large text file with 10 threads
-# echo "Test 3: Large text file with 10 threads"
-# ./client largefile.txt 10
+echo "Test 3: Large text file with 10 threads"
+./client largefile.txt 10
+diff -y test_files/largefile.txt received_files/largefile.txt
 
 # Test 4: Image file with 5 threads
 # echo "Test 4: Image file with 5 threads"

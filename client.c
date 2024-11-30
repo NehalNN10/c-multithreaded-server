@@ -61,24 +61,45 @@ static int t_count = 0;
 void* receive_chunks(void* args)
 {
     // pthread_mutex_lock(&file_mutex);
-    struct chunk_data* data = (struct chunk_data*)args;
-    int client_fd = data->client_socket;
-    int size = data->size;
-    unsigned char* buffer = (unsigned char*)(malloc(size));
-    int start = 0;
-    int valread = read(client_fd, &start, sizeof(int));
-    valread = read(client_fd, buffer, size);
-    printf("Receiving chunk of size %d from position %d\n", size, start);
-    if (valread < 0)
+    int client_fd = *(int*)args;
+    printf("malloc here?\n");
+    struct chunk_data* data = (struct chunk_data*)malloc(sizeof(struct chunk_data));
+    printf("malloc here?\n");
+    int valread = read(client_fd, data, sizeof(struct chunk_data));
+    if (valread != sizeof(struct chunk_data))
     {
-        printf("Client: Error reading chunk from server\n");
+        printf("Error reading chunk data\n");
+        free(data);
         return NULL;
     }
-    if (valread != size)
+    printf("Receiving chunk of size %d from position %d\n", data->size, data->start);
+    /*
+    struct chunk_data *data = (struct chunk_data *)args;
+    int client_fd = data->client_socket;
+    int size = data->size;
+    unsigned char *buffer = (unsigned char *)(malloc(size));
+    int start = 0;
+
+    // Read start position
+    int valread = read(client_fd, &start, sizeof(int));
+    if (valread != sizeof(int))
     {
-        printf("Warning: Read mismatched chunk size: %d\n", valread);
-        fflush(stdout);
+        printf("Error reading start position: expected %lu bytes, got %d bytes\n", sizeof(int), valread);
+        free(buffer);
+        return NULL;
     }
+    printf("Start position: %d\n", start);
+
+    // Read chunk data
+    valread = read(client_fd, buffer, size);
+    if (valread < 0)
+    {
+        printf("Error reading chunk data\n");
+        free(buffer);
+        return NULL;
+    }
+    printf("Receiving chunk of size %d from position %d\n", size, start);
+
     printf("Client: Thread %d {\n%s\n}, position %d\n", ++t_count, buffer, data->start);
 
     // appending chunk to file
@@ -113,6 +134,7 @@ void* receive_chunks(void* args)
     free(buffer);
     // free(file_name);
     // printf("Chunk received and written to file from thread %ld\n", pthread_self());
+    */
     return NULL;
 }
 
@@ -225,7 +247,8 @@ int main(int argc, char const *argv[])
             data->size = round_up_division(file_size, no_of_threads);
         }
         data->file_name = file_name;
-        pthread_create(&threads[i], NULL, receive_chunks, data);
+        // pthread_create(&threads[i], NULL, receive_chunks, data);
+        pthread_create(&threads[i], NULL, receive_chunks, client_fd);
         // printf("Thread %d created\n", i);
     }
 
