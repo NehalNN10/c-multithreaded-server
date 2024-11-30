@@ -25,10 +25,10 @@ echo "Test 3: Large text file with 10 threads"
 diff -y largefile.txt reqlargefile.txt
 
 # Test 4: Image file with 5 threads
-# echo "Test 4: Image file with 5 threads"
-# # ./client image.jpg 5
-# ./client a-borealis.jpg 5
-# diff test_files/a-borealis.jpg received_files/a-borealis.jpg
+echo "Test 4: Image file with 5 threads"
+# ./client image.jpg 5
+./client a-borealis.jpg 5
+diff test_files/a-borealis.jpg received_files/a-borealis.jpg
 
 # # Test 5: Large image file with 10 threads
 # echo "Test 5: Large image file with 10 threads"

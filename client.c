@@ -45,8 +45,6 @@ int create_file_with_size(const char *filename, int file_size)
     }
     return 0;
 }
-
-// TODO: include checksum in this struct
 struct chunk_data
 {
     int client_socket; // needed for TCP connection
@@ -55,86 +53,177 @@ struct chunk_data
     char *file_name;
 };
 
-static int t_count = 0;
-
-// function which receives chunks from server
-void* receive_chunks(void* args)
+char* sha_256_checksum(char* file_name)
 {
-    // pthread_mutex_lock(&file_mutex);
-    int client_fd = *(int*)args;
-    printf("malloc here?\n");
-    struct chunk_data* data = (struct chunk_data*)malloc(sizeof(struct chunk_data));
-    printf("malloc here?\n");
-    int valread = read(client_fd, data, sizeof(struct chunk_data));
-    if (valread != sizeof(struct chunk_data))
-    {
-        printf("Error reading chunk data\n");
-        free(data);
-        return NULL;
-    }
-    printf("Receiving chunk of size %d from position %d\n", data->size, data->start);
-    /*
-    struct chunk_data *data = (struct chunk_data *)args;
-    int client_fd = data->client_socket;
-    int size = data->size;
-    unsigned char *buffer = (unsigned char *)(malloc(size));
-    int start = 0;
-
-    // Read start position
-    int valread = read(client_fd, &start, sizeof(int));
-    if (valread != sizeof(int))
-    {
-        printf("Error reading start position: expected %lu bytes, got %d bytes\n", sizeof(int), valread);
-        free(buffer);
-        return NULL;
-    }
-    printf("Start position: %d\n", start);
-
-    // Read chunk data
-    valread = read(client_fd, buffer, size);
-    if (valread < 0)
-    {
-        printf("Error reading chunk data\n");
-        free(buffer);
-        return NULL;
-    }
-    printf("Receiving chunk of size %d from position %d\n", size, start);
-
-    printf("Client: Thread %d {\n%s\n}, position %d\n", ++t_count, buffer, data->start);
-
-    // appending chunk to file
-    // using some random file for now
-    // char* file_name = (char*)(malloc(256));
-    char file_name[256];
-    snprintf(file_name, 256, "received_files/%s", data->file_name); // Construct the file path
-
-    printf("File path: %s\n", file_name);
-    FILE* file = fopen(file_name, "rb+");
-
-    printf("Writing from position %d\n", start);
-
+    FILE* file = popen("sha256sum file_name", "r");
+    char buffer[64];
     if (file == NULL)
     {
-        printf("Client: Error opening file %s\n", file_name);
+        perror("Error opening file");
         return NULL;
     }
-    fseek(file, start, SEEK_SET);
-    fwrite(buffer, 1, valread, file);
-    // rewind(file);
+    if (fscanf(file, "%64s", buffer) == 1)
+    {
+        printf("Checksum: %s\n", buffer);
+    }
+    pclose(file);
+    return buffer;
+}
 
-    // t_count += 1;
+// function which receives chunks from server
+void *receive_chunks(void *args)
+{
+    // pthread_mutex_lock(&file_mutex);
+    int client_fd = *(int *)args;
 
-    // TODO: check checksum here
+    printf("[CLIENT] Creating new socket for thread %d\n", client_fd);
+    int thread_socket = socket(AF_INET, SOCK_STREAM, 0);
+    if (thread_socket < 0)
+    {
+        perror("Client: Socket creation failed");
+        return NULL;
+    }
+    printf("[CLIENT] Thread %d: Socket created\n", client_fd);
 
-    // close file
+    // Step 2: Connect the thread's socket to the server
+    struct sockaddr_in serv_addr;
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_port = htons(PORT);
+    // inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr);
+
+    // Convert IPv4 and IPv6 addresses from text to binary
+    // form
+    if (inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr) <= 0)
+    {
+        printf(
+            "\nInvalid address/ Address not supported \n");
+        return NULL;
+    }
+
+    // Connecting thread socket to server
+    printf("[CLIENT] Attempting to connect thread socket %d to server\n", client_fd);
+    sleep(1);
+    if (connect(thread_socket, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+    {
+        perror("Client: Connection failed");
+        close(thread_socket);
+        return NULL;
+    }
+
+    printf("[CLIENT] Thread %d: Connected to server\n", client_fd);
+
+    int thread_no = 0;
+    // receive thread number
+    int valread = read(thread_socket, &thread_no, sizeof(int));
+    printf("[CLIENT] Thread %d: Received thread number %d\n", client_fd, thread_no);
+
+    // receive metadata
+    int header[2];
+    valread = read(thread_socket, header, sizeof(header));
+    if (valread != sizeof(header))
+    {
+        printf("[CLIENT] Error reading chunk metadata\n");
+        close(thread_socket);
+        return NULL;
+    }
+    printf("[CLIENT] Thread %d: Received chunk metadata: start=%d, size=%d\n", thread_no, header[0], header[1]);
+
+    // receive actual chunk
+    unsigned char *buffer = (unsigned char *)(malloc(header[1] == 65536 ? 65536 : header[1]));
+
+    // write data to file
+    char temp_file_name[256];
+    // pthread_mutex_lock(&file_mutex);
+    snprintf(temp_file_name, 256, "received_files/temp%d.txt", thread_no); // Construct the file path
+    printf("[CLIENT] Thread %d: Writing data to file %s\n", thread_no, temp_file_name);
+    FILE *file = fopen(temp_file_name, "wb+");
+    if (file == NULL)
+    {
+        printf("[CLIENT] Error opening file %s\n", temp_file_name);
+        perror("[CLIENT] Error opening file");
+        free(buffer);
+        return NULL;
+    }
+    // pthread_mutex_unlock(&file_mutex);
+    printf("[CLIENT] Thread %d: File opened\n", thread_no);
+    // printf("[CLIENT] Thread %d: Data written to file\n", thread_no);
+
+    if (header[1] > 65536)
+    {
+        pthread_mutex_lock(&file_mutex);
+        int i = 0;
+        char* flag = "0";
+        int chunk_size = 0;
+        // while(flag == 0)
+        // while(strcmp(flag, "1") != 0)
+        while(i*65536 < header[1])
+        {
+            valread = read(thread_socket, &chunk_size, sizeof(int));
+            if (valread < 0)
+            {
+                printf("[CLIENT] Error reading chunk size for thread %d\n", thread_no);
+                free(buffer);
+                close(thread_socket);
+                return NULL;
+            }
+            printf("[CLIENT] Thread %d: Received chunk size: %d\n", thread_no, chunk_size);
+            valread = read(thread_socket, buffer, chunk_size);
+            if (valread < 0)
+            {
+                printf("[CLIENT] Error reading chunk data\n");
+                free(buffer);
+                close(thread_socket);
+                return NULL;
+            }
+            printf("[CLIENT] Thread %d: Received chunk data from offset %d\n", thread_no, i*65536);
+            // sleep(1);
+            fwrite(buffer, 1, valread, file);
+            printf("[CLIENT] Thread %d: Data written to file %s\n", thread_no, temp_file_name);
+            valread = read(thread_socket, flag, sizeof(char));
+            printf("[CLIENT] Flag value: %s for thread %d\n", flag, thread_no);
+            i++;
+        }
+        // pthread_mutex_unlock(&file_mutex);
+    }
+    else
+    {
+        valread = read(thread_socket, buffer, header[1]);
+        if (valread < 0)
+        {
+            printf("[CLIENT] Error reading chunk data\n");
+            free(buffer);
+            close(thread_socket);
+            return NULL;
+        }
+        printf("[CLIENT] Thread %d: Received chunk data\n", thread_no);
+        fwrite(buffer, 1, valread, file);
+        printf("[CLIENT] Thread %d: Data written to file %s\n", thread_no, temp_file_name);
+    }
+
     fclose(file);
     pthread_mutex_unlock(&file_mutex);
+    close(thread_socket);
 
-    // free buffer
-    free(buffer);
-    // free(file_name);
-    // printf("Chunk received and written to file from thread %ld\n", pthread_self());
-    */
+    printf("[CLIENT] Thread %d: Socket closed\n", thread_no);
+
+    // // write data to file
+    // char temp_file_name[256];
+    // // pthread_mutex_lock(&file_mutex);
+    // snprintf(temp_file_name, 256, "received_files/temp%d.txt", thread_no); // Construct the file path
+    // printf("[CLIENT] Thread %d: Writing data to file %s\n", thread_no, temp_file_name);
+    // FILE *file = fopen(temp_file_name, "wb+");
+    // if (file == NULL)
+    // {
+    //     printf("[CLIENT] Error opening file %s\n", temp_file_name);
+    //     perror("[CLIENT] Error opening file");
+    //     free(buffer);
+    //     return NULL;
+    // }
+    // fwrite(buffer, 1, valread, file);
+    // fclose(file);
+    // pthread_mutex_unlock(&file_mutex);
+    printf("[CLIENT] Thread %d: Data written to file\n", thread_no);
+
     return NULL;
 }
 
@@ -148,17 +237,14 @@ int main(int argc, char const *argv[])
     }
 
     // store and assign file name
-    // char* file_name = (char*)(malloc(strlen(argv[1]) + 1));
     char file_name[256];
     strcpy(file_name, argv[1]);
 
     int no_of_threads = atoi(argv[2]);
 
-    // int status, valread, client_fd;
+    // need to communicate these to the server initially
     int status, valread, client_fd;
     struct sockaddr_in serv_addr;
-    // char *hello = "Hello from client";
-    // char buffer[1024] = {0};
     if ((client_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
     {
         printf("\n Socket creation error \n");
@@ -184,10 +270,8 @@ int main(int argc, char const *argv[])
         printf("\nPerhaps the server is not running\n");
         return -1;
     }
-    // send(client_fd, hello, strlen(hello), 0);
 
     // sending arguments to background server
-    // printf("Size of file name: %ld\n", sizeof(file_name));
     send(client_fd, file_name, sizeof(file_name), 0);
     // Send number of threads
     if (send(client_fd, &no_of_threads, sizeof(int), 0) <= 0)
@@ -196,46 +280,42 @@ int main(int argc, char const *argv[])
         close(client_fd);
         return -1;
     }
-    printf("File transfer request sent!\n");
-    // printf("Client wants to send %s with %d threads\n", file_name, no_of_threads);
-
-    char *rec_file_name = (char *)(malloc(256));
-    int _ = snprintf(rec_file_name, 256, "received_files/%s", file_name); // Construct the file path
-    _ += 0;
+    printf("[CLIENT] File transfer request sent!\n");
+    // sleep(3);
 
     // receiving response from server
     int file_size;
     valread = read(client_fd, &file_size, sizeof(int));
-    printf("Size of file: %d\n", file_size);
+    printf("[CLIENT] Size of file: %d\n", file_size);
     valread += 0; // to avoid unused variable warning
-    // printf("The size of the file is %d\n", file_size);
-    // printf("Trying to clear %s\n", rec_file_name);
+    // // printf("The size of the file is %d\n", file_size);
+    // // printf("Trying to clear %s\n", rec_file_name);
 
-    FILE *temp = fopen(rec_file_name, "wb");
-    if (temp == NULL)
-    {
-        printf("Client: Error opening file %s\n", rec_file_name);
-        perror("Client: Error opening file");
-        close(client_fd);
-        return -1;
-    }
-    fclose(temp);
 
-    if (create_file_with_size(rec_file_name, file_size) == 0)
-    {
-        printf("File created successfully: %s\n", rec_file_name);
-    }
-    else
-    {
-        printf("Failed to create file\n");
-    }
+    // FILE *temp = fopen(rec_file_name, "wb");
+    // if (temp == NULL)
+    // {
+    //     printf("[CLIENT] Error opening file %s\n", rec_file_name);
+    //     perror("[CLIENT] Error opening file");
+    //     close(client_fd);
+    //     return -1;
+    // }
+    // fclose(temp);
+
+    // if (create_file_with_size(rec_file_name, file_size) == 0)
+    // {
+    //     printf("[CLIENT] File created successfully: %s\n", rec_file_name);
+    // }
+    // else
+    // {
+    //     printf("[CLIENT] Failed to create file\n");
+    // }
 
     // create threads
-    pthread_t* threads = (pthread_t*)(malloc(no_of_threads * sizeof(pthread_t)));
-    // printf("%d threads created\n", no_of_threads);
+    pthread_t *threads = (pthread_t *)(malloc(no_of_threads * sizeof(pthread_t)));
     for (int i = 0; i < no_of_threads; i++)
     {
-        struct chunk_data* data = (struct chunk_data*)(malloc(sizeof(struct chunk_data)));
+        struct chunk_data *data = (struct chunk_data *)(malloc(sizeof(struct chunk_data)));
         data->client_socket = client_fd;
         data->start = i * round_up_division(file_size, no_of_threads);
         if (i == no_of_threads - 1)
@@ -248,26 +328,82 @@ int main(int argc, char const *argv[])
         }
         data->file_name = file_name;
         // pthread_create(&threads[i], NULL, receive_chunks, data);
-        pthread_create(&threads[i], NULL, receive_chunks, client_fd);
+        pthread_create(&threads[i], NULL, receive_chunks, &client_fd);
         // printf("Thread %d created\n", i);
     }
 
     // join threads
+    printf("[CLIENT] Waiting for threads to finish\n");
     for (int i = 0; i < no_of_threads; i++)
     {
         pthread_join(threads[i], NULL);
     }
 
-    // receiving checksum
-    // calculating checksum
+    // put all temp files together into one file
+    char *rec_file_name = (char *)(malloc(256));
+    int _ = snprintf(rec_file_name, 256, "received_files/%s", file_name); // Construct the file path
+    _ += 0; // to avoid unused variable warning
+    printf("[CLIENT] File path: %s\n", rec_file_name);
+
+    FILE *rec_file = fopen(rec_file_name, "wb");
+    if (rec_file == NULL)
+    {
+        perror("[CLIENT] Error creating file");
+        return -1;
+    }
+
+    for (int i = 1; i <= no_of_threads; i++)
+    {
+        char temp_filename[256];
+        snprintf(temp_filename, sizeof(temp_filename), "received_files/temp%d.txt", i);
+        FILE *temp_file = fopen(temp_filename, "rb");
+        if (temp_file == NULL)
+        {
+            perror("[CLIENT] Error opening temp file");
+            fclose(rec_file);
+            return -1;
+        }
+
+        fseek(temp_file, 0, SEEK_END);
+        long temp_file_size = ftell(temp_file);
+        printf("[CLIENT] Temp file %s size: %ld\n", temp_filename, temp_file_size);
+        rewind(temp_file);
+
+        unsigned char *buffer = (unsigned char *)malloc(temp_file_size);
+        if (buffer == NULL)
+        {
+            perror("[CLIENT] Error allocating memory");
+            fclose(temp_file);
+            fclose(rec_file);
+            return -1;
+        }
+
+        fread(buffer, 1, temp_file_size, temp_file);
+        fwrite(buffer, 1, temp_file_size, rec_file);
+
+        free(buffer);
+        fclose(temp_file);
+        printf("[CLIENT] Temp file %s written to final output\n", temp_filename);
+    }
+
+    fclose(rec_file);
+    printf("[CLIENT] Final output file created: %s\n", rec_file_name);
+    free(rec_file_name);
+
+    // cleanup
+    system("rm received_files/temp*.txt");
+
+    // // receiving checksum
+    // // calculating checksum
 
     // closing the connected socket
     close(client_fd);
+    printf("[CLIENT] Connection closed\n\n\n");
 
-    // free data here
-    free(threads);
-    free(rec_file_name);
-    
+    // // free data here
+    // free(threads);
+    // free(rec_file_name);
+
     return 0;
 }
 
